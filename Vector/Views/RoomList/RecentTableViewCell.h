@@ -19,9 +19,13 @@
 /**
  `RecentTableViewCell` instances display a room in the context of the recents list.
  */
-@interface RecentTableViewCell : MXKRecentTableViewCell
+@interface RecentTableViewCell : MXKRecentTableViewCell<UIScrollViewDelegate>
 
 @property (weak, nonatomic) IBOutlet UIView *bingIndicator;
 @property (weak, nonatomic) IBOutlet MXKImageView *roomAvatar;
+
+@property (weak, nonatomic) IBOutlet UIScrollView *recentScrollView;
+@property (weak, nonatomic) IBOutlet UIView *scrollContentView;
+@property (weak, nonatomic) IBOutlet UIView *recentContentView;
 
 @end

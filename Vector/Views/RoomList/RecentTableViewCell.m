@@ -16,7 +16,17 @@
 
 #import "RecentTableViewCell.h"
 
+@interface RecentTableViewCell()
+{
+    int nbrExtras;
+    
+    NSMutableArray* imageViewsList;
+}
+@end
+
 @implementation RecentTableViewCell
+
+#define RECENT_CELL_HEIGHT 74
 
 #pragma mark - Class methods
 
@@ -27,6 +37,13 @@
     // Round image view
     [_roomAvatar.layer setCornerRadius:_roomAvatar.frame.size.width / 2];
     _roomAvatar.clipsToBounds = YES;
+    
+    nbrExtras = 3;
+
+
+    // hide the scroll indicator
+    self.recentScrollView.showsHorizontalScrollIndicator = NO;
+    self.recentScrollView.showsVerticalScrollIndicator = NO;
 }
 
 - (void)render:(MXKCellData *)cellData
@@ -73,12 +90,94 @@
     {
         self.lastEventDescription.text = @"";
     }
+    
+    if (!imageViewsList && (nbrExtras > 0))
+    {
+        CGFloat startX = self.recentContentView.frame.size.width;
+        
+        // update the scrollview contentsize
+        CGSize contentSize = self.recentScrollView.contentSize;
+        contentSize.width = startX + (RECENT_CELL_HEIGHT * nbrExtras);
+        self.recentScrollView.contentSize = contentSize;
+        
+        
+        for(int i = 0; i < nbrExtras; i++)
+        {
+            UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(startX, 0, RECENT_CELL_HEIGHT, RECENT_CELL_HEIGHT)];
+            [self.scrollContentView addSubview:imageView];
+            
+            startX += RECENT_CELL_HEIGHT;
+            
+            if (i == 0)
+            {
+                [imageView setBackgroundColor:[UIColor blueColor]];
+            }
+            else if (i == 1)
+            {
+                [imageView setBackgroundColor:[UIColor redColor]];
+            }
+            else if (i == 2)
+            {
+                [imageView setBackgroundColor:[UIColor yellowColor]];
+            }
+        }
+    }
+    
+    self.recentScrollView.delegate = self;
 }
 
 + (CGFloat)heightForCellData:(MXKCellData *)cellData withMaximumWidth:(CGFloat)maxWidth
 {
     // The height is fixed
-    return 74;
+    return RECENT_CELL_HEIGHT;
 }
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView
+{
+    if (scrollView == self.recentScrollView)
+    {
+        CGPoint offset, boundedOffset;
+        
+        offset = boundedOffset = self.recentScrollView.contentOffset;
+        
+        if (boundedOffset.x < 0)
+        {
+            boundedOffset.x = 0;
+        }
+        else if (boundedOffset.x > (nbrExtras * RECENT_CELL_HEIGHT))
+        {
+            boundedOffset.x = (nbrExtras * RECENT_CELL_HEIGHT);
+        }
+        
+        if (!CGPointEqualToPoint(offset, boundedOffset))
+        {
+            [self.recentScrollView setContentOffset:boundedOffset animated:NO];
+        }
+    }
+}
+
+- (void)scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)point
+{
+    CGFloat ceil = (nbrExtras * RECENT_CELL_HEIGHT) / 2.0;
+    CGFloat offsetX = point->x;
+    
+    if (offsetX > 0)
+    {
+       if (offsetX < ceil)
+       {
+           offsetX = 0;
+       }
+       else if (offsetX >= ceil)
+       {
+           offsetX = (nbrExtras * RECENT_CELL_HEIGHT);
+       }
+    }
+
+    if (offsetX != point->x)
+    {
+        point->x = offsetX;
+    }
+}
+
 
 @end
