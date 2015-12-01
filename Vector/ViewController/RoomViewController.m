@@ -354,7 +354,10 @@
             name = member.displayname;
         }
         
-        [names addObject:name];
+        if (name)
+        {
+            [names addObject:name];
+        }
     }
     
     if (0 == count)

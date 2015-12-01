@@ -16,11 +16,6 @@
 
 #import <MatrixKit/MatrixKit.h>
 
-#import "RecentTableViewCell.h"
-
-/**
- 'RecentsDataSource' class inherits from 'MXKInterleavedRecentsDataSource' to define Vector recents source.
- */
-@interface RecentsDataSource : MXKInterleavedRecentsDataSource<RecentTableViewCellDelegate>
+@interface RecentCellScrollView : UIScrollView
 
 @end

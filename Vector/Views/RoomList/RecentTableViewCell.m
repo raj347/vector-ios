@@ -18,18 +18,19 @@
 
 @interface RecentTableViewCell()
 {
-    int nbrExtras;
+    NSUInteger nbrExtras;
     
+    NSArray* imagesList;
     NSMutableArray* imageViewsList;
 }
 @end
 
 @implementation RecentTableViewCell
+@synthesize recentTableViewCellDelegate;
 
 #define RECENT_CELL_HEIGHT 74
 
 #pragma mark - Class methods
-
 - (void)awakeFromNib
 {
     [super awakeFromNib];
@@ -38,12 +39,55 @@
     [_roomAvatar.layer setCornerRadius:_roomAvatar.frame.size.width / 2];
     _roomAvatar.clipsToBounds = YES;
     
-    nbrExtras = 3;
-
-
     // hide the scroll indicator
     self.recentScrollView.showsHorizontalScrollIndicator = NO;
     self.recentScrollView.showsVerticalScrollIndicator = NO;
+}
+
+// init with images list
+- (void)initSlideActions:(NSArray*)anImagesList
+{
+    if (imagesList != anImagesList)
+    {
+        if (imageViewsList)
+        {
+            for (UIView* view in imageViewsList)
+            {
+                [view removeFromSuperview];
+            }
+            
+            imageViewsList = nil;
+            
+            // update the scrollview contentsize
+            self.recentScrollView.contentSize = self.recentContentView.frame.size;
+        }
+        
+        imagesList = anImagesList;
+        nbrExtras = imagesList.count;
+    }
+}
+
+- (void)setEditMode:(BOOL)isEditMode
+{
+    if (_editMode != isEditMode)
+    {
+        _editMode = isEditMode;
+        
+        if (self.recentTableViewCellDelegate)
+        {
+            [self.recentTableViewCellDelegate recentTableViewCell:self isInEditionMode:_editMode];
+        }
+        
+        if (imageViewsList)
+        {
+            CGPoint offset;
+            
+            offset.y = 0;
+            offset.x = _editMode ? (nbrExtras * RECENT_CELL_HEIGHT) : 0;
+            
+            [self.recentScrollView setContentOffset:offset animated:NO];
+        }
+    }
 }
 
 - (void)render:(MXKCellData *)cellData
@@ -93,6 +137,8 @@
     
     if (!imageViewsList && (nbrExtras > 0))
     {
+        imageViewsList = [[NSMutableArray alloc] init];
+        
         CGFloat startX = self.recentContentView.frame.size.width;
         
         // update the scrollview contentsize
@@ -100,14 +146,31 @@
         contentSize.width = startX + (RECENT_CELL_HEIGHT * nbrExtras);
         self.recentScrollView.contentSize = contentSize;
         
-        
-        for(int i = 0; i < nbrExtras; i++)
+        for(NSUInteger i = 0; i < nbrExtras; i++)
         {
             UIImageView *imageView = [[UIImageView alloc] initWithFrame:CGRectMake(startX, 0, RECENT_CELL_HEIGHT, RECENT_CELL_HEIGHT)];
-            [self.scrollContentView addSubview:imageView];
+            
+            id image = [imagesList objectAtIndex:i];
+            
+            if ([image isKindOfClass:[UIImage class]])
+            {
+                imageView.image = image;
+            }
+            
+            self.scrollContentView.userInteractionEnabled = YES;
+            imageView.userInteractionEnabled = YES;
+            [self.recentScrollView addSubview:imageView];
+            
+            UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(onImageViewTap:)];
+            [tapGesture setNumberOfTouchesRequired:1];
+            [tapGesture setNumberOfTapsRequired:1];
+            [imageView addGestureRecognizer:tapGesture];
+            
+            [imageViewsList addObject:imageView];
             
             startX += RECENT_CELL_HEIGHT;
             
+            // waiting after the icons
             if (i == 0)
             {
                 [imageView setBackgroundColor:[UIColor blueColor]];
@@ -119,6 +182,10 @@
             else if (i == 2)
             {
                 [imageView setBackgroundColor:[UIColor yellowColor]];
+            }
+            else if (i == 3)
+            {
+                [imageView setBackgroundColor:[UIColor purpleColor]];
             }
         }
     }
@@ -132,6 +199,7 @@
     return RECENT_CELL_HEIGHT;
 }
 
+#pragma mark - scrollview  methods
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
     if (scrollView == self.recentScrollView)
@@ -140,13 +208,15 @@
         
         offset = boundedOffset = self.recentScrollView.contentOffset;
         
-        if (boundedOffset.x < 0)
+        if (boundedOffset.x <= 0)
         {
             boundedOffset.x = 0;
+            self.editMode = NO;
         }
-        else if (boundedOffset.x > (nbrExtras * RECENT_CELL_HEIGHT))
+        else if (boundedOffset.x >= (nbrExtras * RECENT_CELL_HEIGHT))
         {
             boundedOffset.x = (nbrExtras * RECENT_CELL_HEIGHT);
+            self.editMode = YES;
         }
         
         if (!CGPointEqualToPoint(offset, boundedOffset))
@@ -155,6 +225,11 @@
         }
     }
 }
+
+- (BOOL)gestureRecognizer:(UIGestureRecognizer *)gestureRecognizer shouldRecognizeSimultaneouslyWithGestureRecognizer:(UIGestureRecognizer *)otherGestureRecognizer {
+    return YES;
+}
+
 
 - (void)scrollViewWillEndDragging:(UIScrollView *)scrollView withVelocity:(CGPoint)velocity targetContentOffset:(inout CGPoint *)point
 {
@@ -176,6 +251,22 @@
     if (offsetX != point->x)
     {
         point->x = offsetX;
+    }
+}
+
+#pragma mark - actions
+
+- (void)onImageViewTap:(UIGestureRecognizer*)gestureRecognizer
+{
+    NSUInteger pos = [imageViewsList indexOfObject:gestureRecognizer.view];
+    
+    // tap on a known imageview
+    if ((pos != NSNotFound) && self.recentTableViewCellDelegate)
+    {
+        [self.recentTableViewCellDelegate recentTableViewCell:self didSelect:pos];
+        
+        // hide the edition menu
+        self.editMode = NO;
     }
 }
 

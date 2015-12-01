@@ -16,6 +16,33 @@
 
 #import <MatrixKit/MatrixKit.h>
 
+#import "RecentCellScrollView.h"
+
+@class RecentTableViewCell;
+
+/**
+ `RecentTableViewCell` delegate.
+ */
+@protocol RecentTableViewCellDelegate <NSObject>
+
+/**
+ Tells the delegate that the cell enter / leaves in the edition mode
+ 
+ @param recentTableViewCell the `RecentTableViewCell` instance.
+ @param isInEditionMode YES if the cell enters in edition mode. NO if it leaves the edition mode
+ */
+- (void)recentTableViewCell:(RecentTableViewCell*)recentTableViewCell isInEditionMode:(BOOL)isInEditionMode;
+
+/**
+ Tells the delegate that the user taps on a cell extra button.
+ 
+ @param recentTableViewCell the `RecentTableViewCell` instance.
+ @param index the index in the imagesList list provided with initSlideActions
+ */
+- (void)recentTableViewCell:(RecentTableViewCell*)recentTableViewCell didSelect:(NSUInteger)index;
+
+@end
+
 /**
  `RecentTableViewCell` instances display a room in the context of the recents list.
  */
@@ -24,8 +51,14 @@
 @property (weak, nonatomic) IBOutlet UIView *bingIndicator;
 @property (weak, nonatomic) IBOutlet MXKImageView *roomAvatar;
 
-@property (weak, nonatomic) IBOutlet UIScrollView *recentScrollView;
+@property (weak, nonatomic) IBOutlet RecentCellScrollView *recentScrollView;
 @property (weak, nonatomic) IBOutlet UIView *scrollContentView;
 @property (weak, nonatomic) IBOutlet UIView *recentContentView;
+
+@property (nonatomic) id<RecentTableViewCellDelegate> recentTableViewCellDelegate;
+@property (nonatomic) BOOL editMode;
+
+// init with image list
+- (void)initSlideActions:(NSArray*)imagesList;
 
 @end
